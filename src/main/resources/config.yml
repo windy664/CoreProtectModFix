@@ -1,0 +1,9 @@
+#排序产犊
+index: 5
+#插件前缀信息
+Prefix: '§b🔍 交互查询系统 '
+#是否开启调试模式
+debug: false
+#要检测的方块，可以通过QuickShop获得,支持模糊匹配
+tracked-blocks:
+  - MEKANISMGENERATORS_BIO_GENERATOR
