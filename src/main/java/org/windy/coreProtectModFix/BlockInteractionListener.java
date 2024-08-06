@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 
 public class BlockInteractionListener implements Listener {
@@ -158,34 +159,36 @@ public class BlockInteractionListener implements Listener {
         return processedRecord.toString();
     }
 
-    private String uploadToHastebin(String content) {
-        String pasteUrl = "https://paste.helpch.at/documents";
-        try {
-            URL url = new URL(pasteUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "text/plain");
-            connection.setDoOutput(true);
+    private CompletableFuture<String> uploadToHastebin(String content) {
+        return CompletableFuture.supplyAsync(() -> {
+            String pasteUrl = "https://paste.helpch.at/documents";
+            try {
+                URL url = new URL(pasteUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "text/plain");
+                connection.setDoOutput(true);
 
-            try (OutputStream os = connection.getOutputStream()) {
-                byte[] input = content.getBytes("utf-8");
-                os.write(input, 0, input.length);
-            }
-
-            if (connection.getResponseCode() == 200) {
-                try (Scanner scanner = new Scanner(connection.getInputStream())) {
-                    String responseBody = scanner.useDelimiter("\\A").next();
-                    // 解析返回的JSON，获取key
-                    JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
-                    String key = jsonObject.get("key").getAsString();
-                    return "https://paste.helpch.at/" + key;
+                try (OutputStream os = connection.getOutputStream()) {
+                    byte[] input = content.getBytes("utf-8");
+                    os.write(input, 0, input.length);
                 }
-            } else {
-                return "Error: " + connection.getResponseCode();
+
+                if (connection.getResponseCode() == 200) {
+                    try (Scanner scanner = new Scanner(connection.getInputStream())) {
+                        String responseBody = scanner.useDelimiter("\\A").next();
+                        // 解析返回的JSON，获取key
+                        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+                        String key = jsonObject.get("key").getAsString();
+                        return "https://paste.helpch.at/" + key;
+                    }
+                } else {
+                    return "Error: " + connection.getResponseCode();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "无法连接：" + e.getMessage();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "无法连接：" + e.getMessage();
-        }
+        });
     }
 }
